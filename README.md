@@ -7,7 +7,7 @@ DpInstExitCode2ExitCode.exe translates the exit code from Dpinst.exe into a exit
 DpInstExitCode2ExitCode.exe <DpInst ExitCode>
 ```
 
-##Example: Install-Package.cmd
+## Example: Install-Package.cmd
 ```
 Set ExitCode=0
 pushd "%~dp0"
