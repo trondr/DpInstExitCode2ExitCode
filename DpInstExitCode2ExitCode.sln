@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27428.2027
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DpInstExitCode2ExitCode", "src\DpInstExitCode2ExitCode\DpInstExitCode2ExitCode.csproj", "{96C39B0A-A795-4826-B546-665B903EF37A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DpInstExitCode2ExitCode.Tests", "src\DpInstExitCode2ExitCode.Tests\DpInstExitCode2ExitCode.Tests.csproj", "{6A5B19EF-319F-420B-B689-CE68A41979EF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{96C39B0A-A795-4826-B546-665B903EF37A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{96C39B0A-A795-4826-B546-665B903EF37A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{96C39B0A-A795-4826-B546-665B903EF37A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{96C39B0A-A795-4826-B546-665B903EF37A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6A5B19EF-319F-420B-B689-CE68A41979EF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6A5B19EF-319F-420B-B689-CE68A41979EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6A5B19EF-319F-420B-B689-CE68A41979EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6A5B19EF-319F-420B-B689-CE68A41979EF}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {31278F38-B298-4183-8C70-BFC6F3C3A2B3}
+	EndGlobalSection
+EndGlobal

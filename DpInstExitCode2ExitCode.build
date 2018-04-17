@@ -1,0 +1,342 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!--Set product properties and paths-->
+  
+  <PropertyGroup>    
+    <ProductName>DpInstExitCode2ExitCode</ProductName>
+    <ProductCompany>github.com.trondr</ProductCompany>
+    <ProductDescription>DpInstExitCode2ExitCode - Translates the exit code from Dpinst.exe into a exit code that can be used in software distribution packages: Success (0), Error (1) or Reboot needed (3010)</ProductDescription>
+    <ProductCopyright>Copyright &#169; github.com.trondr $([System.DateTime]::Now.Year)</ProductCopyright>
+    <ProductProjectName>$(ProductName)</ProductProjectName>
+
+    <ShortYear>$([System.DateTime]::Now.ToString(`yy`))</ShortYear>
+    <DayOfYear>$([System.DateTime]::Now.DayOfYear.ToString(`000`))</DayOfYear>
+    <Major>1</Major>
+    <Minor>0</Minor>
+    <Build>$(ShortYear)$(DayOfYear)</Build>
+    <Revision>0</Revision>
+
+    <BuildDirectory>$(MSBuildProjectDirectory)\build</BuildDirectory>
+    <BinDirectory>$(BuildDirectory)\bin</BinDirectory>
+    <ObjDirectory>$(BuildDirectory)\obj</ObjDirectory>
+    <SrcDirectory>$(MSBuildProjectDirectory)\src</SrcDirectory>
+    <ToolsDirectory>$(MSBuildProjectDirectory)\tools</ToolsDirectory>
+	  <ArtifactsDirectory>$(MSBuildProjectDirectory)\artifacts</ArtifactsDirectory>
+  
+    <NunitVersion>2.6.4</NunitVersion>
+	
+	<!-- Update the SigningPfxSha1Thumbprint below with the thumbprint of your certificate.
+	
+	Creating a Selfsigned certificate for developement, example in powershell:
+	
+		New-SelfSignedCertificate -certstorelocation cert:\currentuser\my -dnsname "Development and Test - trondr" -Type CodeSigningCert
+		Thumbprint                                Subject
+		F8B61231E99586AA6EBE6CA3B334C0BF4DCD2F56  CN=Development and Test - trondr
+	
+	Update the thumbprint to the SigningPfxSha1Thumbprint property below
+		
+	A production certificate should be imported on the production build server:
+		
+		Ref http://stackoverflow.com/questions/17710357/how-do-i-securely-store-a-pfx-password-to-use-in-msbuild
+		
+		1. Log in as the build user
+		2. Run certmgr.msc
+		3. Right-click Certificates - Current User / Personal / Certificates, and select All Tasks / Import...
+		4. Select your .pfx file, enter the password, and click Next and Finish
+		5. Double-click on the imported certificate
+		6. In the Details page, the thumbprint algorithm should be sha1
+		7. Copy the thumbprint, it looks something like 12 34 56 78 90 ab cd ef 12 34 56 78 90 ab cd ef 12 34 56 78
+		8. Update the thumbprint to the SigningPfxSha1Thumbprint property below
+		9. Optionally also update the Description parameter.
+	
+	-->
+	<!-- <SigningPfxSha1Thumbprint>F8B61231E99586AA6EBE6CA3B334C0BF4DCD2F56</SigningPfxSha1Thumbprint> -->
+	<SigningPfxSha1Thumbprint>UNKNOWN1E99586AA6EBE6CA3B334C0BF4DCD2F56</SigningPfxSha1Thumbprint>
+    
+  </PropertyGroup>
+
+  <!--
+		Include MSBuild Community Tasks.
+	-->
+  <Choose>
+    <When Condition="Exists('$(ToolsDirectory)\MSBuildCommunityTasks\MSBuild.Community.Tasks.Targets')">
+      <PropertyGroup>
+        <MSBuildCommunityTasksAvailable>true</MSBuildCommunityTasksAvailable>
+		<MSBuildCommunityTasksPath>$(ToolsDirectory)\MSBuildCommunityTasks</MSBuildCommunityTasksPath>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <MSBuildCommunityTasksAvailable>false</MSBuildCommunityTasksAvailable>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+  <Import Project="$(ToolsDirectory)\MSBuildCommunityTasks\MSBuild.Community.Tasks.Targets" Condition=" '$(MSBuildCommunityTasksAvailable)' == 'true' "/>
+
+    <!--
+		Include MSBuild Custom Tasks.
+	-->
+  <Choose>
+    <When Condition="Exists('$(ToolsDirectory)\MSBuildCustomTasks\MSBuildCustomTasks.Targets')">
+      <PropertyGroup>
+        <MSBuildCustomTasksAvailable>true</MSBuildCustomTasksAvailable>
+		<MSBuildCustomTasksPath>$(ToolsDirectory)\MSBuildCustomTasks</MSBuildCustomTasksPath>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <MSBuildCustomTasksAvailable>false</MSBuildCustomTasksAvailable>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+  <Import Project="$(ToolsDirectory)\MSBuildCustomTasks\MSBuildCustomTasks.Targets" Condition=" '$(MSBuildCustomTasksAvailable)' == 'true' "/>
+  
+  <!-- Verify that NUnit is available-->
+  
+  <Choose>
+    <When Condition="Exists('$(ToolsDirectory)\NUnit\nunit.exe')">
+      <PropertyGroup>
+        <NUnitIsAvailable>true</NUnitIsAvailable>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <NUnitIsAvailable>false</NUnitIsAvailable>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+
+  <!-- Verify if current solution is in a .git repository-->
+
+  <Choose>
+    <When Condition="Exists('$(MSBuildProjectDirectory)\.git')">
+      <PropertyGroup>
+        <IsGitRepository>true</IsGitRepository>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <IsGitRepository>false</IsGitRepository>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+
+  <ItemGroup>
+    <DefaultExclude Include="$(MSBuildProjectDirectory)\**\.hg\**" />
+    <DefaultExclude Include="$(MSBuildProjectDirectory)\**\.git\**" />
+    <DefaultExclude Include="$(MSBuildProjectDirectory)\**\.svn\**" />
+    <DefaultExclude Include="$(MSBuildProjectDirectory)\**\bin\**" />
+    <DefaultExclude Include="$(MSBuildProjectDirectory)\**\obj\**" />
+    <DefaultExclude Include="$(MSBuildProjectDirectory)\**\Release\**" />
+    <DefaultExclude Include="$(MSBuildProjectDirectory)\**\Debug\**" />
+    <DefaultExclude Include="$(MSBuildProjectDirectory)\**\Test\**" />
+    <DefaultExclude Include="$(MSBuildProjectDirectory)\**\TestResults\**" />
+    <DefaultExclude Include="$(MSBuildProjectDirectory)\**\doc\**" />
+    <DefaultExclude Include="$(MSBuildProjectDirectory)\**\www\**" />
+    <DefaultExclude Include="$(MSBuildProjectDirectory)\**\*.user" />
+    <DefaultExclude Include="$(MSBuildProjectDirectory)\**\*.suo" />
+    <DefaultExclude Include="$(MSBuildProjectDirectory)\**\*.zip" />    
+	<DefaultExclude Include="$(MSBuildProjectDirectory)\**\TestResult.xml" />
+  </ItemGroup>
+
+  <Target Name="GitHashInit">
+    <CreateProperty Value="unknown">
+      <Output TaskParameter="Value" PropertyName="RevisionHash" />
+    </CreateProperty>
+	<Message Text="Initial RevisionHash=$(RevisionHash)" Importance="normal" />
+  </Target>
+  
+  <Target Name="GitHash" Condition=" '$(IsGitRepository)' == 'true' " DependsOnTargets="GitHashInit">
+    <GitVersion LocalPath="$(MSBuildProjectDirectory)" Timeout="5000">
+      <Output TaskParameter="CommitHash" PropertyName="RevisionHash" />
+    </GitVersion>
+	<Message Text="Calculated RevisionHash=$(RevisionHash)" Importance="normal" />
+  </Target>
+
+  <Target Name="UpdateRevisionVersion">
+    <XmlRead XPath="/version/property[@name='revision']/@value" XmlFileName="version.xml">
+      <Output TaskParameter="Value" PropertyName="Revision" />
+    </XmlRead>
+    <Math.Add Numbers="$(Revision);1">
+      <Output TaskParameter="Result" PropertyName="Revision" />
+    </Math.Add>
+    <XmlUpdate XPath="/version/property[@name='revision']/@value" XmlFileName="version.xml" Value="$(Revision)"/>
+  </Target>
+
+  <Target Name="UpdateBuildVersion">
+    <XmlRead XPath="/version/property[@name='build']/@value" XmlFileName="version.xml">
+      <Output TaskParameter="Value" PropertyName="Build" />
+    </XmlRead>
+    <Math.Add Numbers="0;$(ShortYear)$(DayOfYear)">
+      <Output TaskParameter="Result" PropertyName="Build" />
+    </Math.Add>
+    <XmlUpdate XPath="/version/property[@name='build']/@value" XmlFileName="version.xml" Value="$(Build)"/>
+  </Target>
+  
+  <Target Name="UpdateVersion" DependsOnTargets="GitHash;UpdateRevisionVersion;UpdateBuildVersion">
+    <XmlRead XPath="/version/property[@name='major']/@value" XmlFileName="version.xml">
+      <Output TaskParameter="Value" PropertyName="Major" />
+    </XmlRead>
+    <XmlRead XPath="/version/property[@name='minor']/@value" XmlFileName="version.xml">
+      <Output TaskParameter="Value" PropertyName="Minor" />
+    </XmlRead>
+    <CreateProperty Value="$(Major).$(Minor).$(Build).$(Revision)">
+      <Output TaskParameter="Value" PropertyName="AssemblyVersion" />
+    </CreateProperty>
+    <Message Text="AssemblyVersion: $(AssemblyVersion)"/>
+  </Target>
+
+  <Target Name="Version" DependsOnTargets="GitHash">
+    <XmlRead XPath="/version/property[@name='major']/@value" XmlFileName="version.xml">
+      <Output TaskParameter="Value" PropertyName="Major" />
+    </XmlRead>
+    <XmlRead XPath="/version/property[@name='minor']/@value" XmlFileName="version.xml">
+      <Output TaskParameter="Value" PropertyName="Minor" />
+    </XmlRead>
+    <XmlRead XPath="/version/property[@name='build']/@value" XmlFileName="version.xml">
+      <Output TaskParameter="Value" PropertyName="Build" />
+    </XmlRead>
+    <XmlRead XPath="/version/property[@name='revision']/@value" XmlFileName="version.xml">
+      <Output TaskParameter="Value" PropertyName="Revision" />
+    </XmlRead>
+    <CreateProperty Value="$(Major).$(Minor).$(Build).$(Revision)">
+      <Output TaskParameter="Value" PropertyName="AssemblyVersion" />
+    </CreateProperty>
+    <CreateProperty Value="$(Major)_$(Minor)_$(Build)_$(Revision)">
+      <Output TaskParameter="Value" PropertyName="AssemblyVersionU" />
+    </CreateProperty>
+    <AssemblyInfo CodeLanguage="CS"
+       OutputFile="$(SrcDirectory)\$(ProductName)\Properties\AssemblyInfo.cs"
+       AssemblyDescription="$(ProductDescription)"
+       AssemblyCompany="$(ProductCompany)"
+       AssemblyProduct="$(ProductName)"
+       AssemblyCopyright="$(ProductCopyright)"
+       CLSCompliant="false"
+       AssemblyInformationalVersion="$(Major).$(Minor).$(Build).$(Revision).$(RevisionHash)"
+       AssemblyVersion="$(AssemblyVersion)"
+       AssemblyFileVersion="$(AssemblyVersion)"
+	  />
+	  
+    <AssemblyInfo CodeLanguage="CS"
+      OutputFile="$(SrcDirectory)\$(ProductName).Tests\Properties\AssemblyInfo.cs"
+      AssemblyDescription="$(ProductDescription)"
+      AssemblyCompany="$(ProductCompany)"
+      AssemblyProduct="$(ProductName).Tests"
+      AssemblyCopyright="$(ProductCopyright)"
+      CLSCompliant="false"
+      AssemblyInformationalVersion="$(Major).$(Minor).$(Build).$(Revision).$(RevisionHash)"
+      AssemblyVersion="$(AssemblyVersion)"
+      AssemblyFileVersion="$(AssemblyVersion)"
+	  />
+	    	  
+  </Target>
+  
+  <!--Compile-->
+  
+  <Target Name="Compile" DependsOnTargets="Version">    
+    <MSBuild Projects="$(SrcDirectory)\$(ProductName)\$(ProductName).csproj" Properties="Configuration=Release;" />	
+  </Target>
+
+  <Target Name="CompileTests" DependsOnTargets="Compile">
+    <MSBuild Projects="$(SrcDirectory)\$(ProductName).Tests\$(ProductName).Tests.csproj" Properties="Configuration=Release"/>
+  </Target>
+
+  <!--Prepare for test-->
+  
+  <Target Name="DownloadNunit" Condition=" '$(NUnitIsAvailable)' == 'false' ">
+    <Message Text="Downloading NUnit..." Importance="normal" />
+	<MakeDir Directories="$(BinDirectory)\Download"/>
+    <WebDownload FileUri="http://github.com/nunit/nunitv2/releases/download/$(NunitVersion)/NUnit-$(NunitVersion).zip" FileName="$(BinDirectory)\Download\NUnit-$(NunitVersion).zip" />
+    <Message Text="Extracting NUnit..." Importance="normal" />
+    <Unzip ZipFileName="$(BinDirectory)\Download\NUnit-$(NunitVersion).zip" TargetDirectory="$(BinDirectory)\Download"/>
+    <ItemGroup>
+      <NUnitFiles Include="$(BinDirectory)\Download\NUnit-$(NunitVersion)\bin\**\**"/>
+    </ItemGroup>
+    <Message Text="Copying NUnit to tools folder..." Importance="normal" />
+    <Copy SourceFiles="@(NUnitFiles)" DestinationFolder="$(ToolsDirectory)\NUnit\%(RecursiveDir)"/>
+    <Copy SourceFiles="$(BinDirectory)\Download\NUnit-$(NunitVersion)\license.txt" DestinationFiles="$(ToolsDirectory)\NUnit\license.txt"/>
+    <Delete Files="$(BinDirectory)\Download\NUnit-$(NunitVersion).zip"/>
+    <DeleteTree Directories="$(BinDirectory)\Download\NUnit-$(NunitVersion)"/>        
+  </Target>
+
+  <!-- Run Unit tests -->
+  <Target Name="UnitTests" DependsOnTargets="CompileTests;DownloadNunit">
+    <CreateItem Include="$(BinDirectory)\Release\$(ProductName).Tests\$(ProductName).Tests.dll">
+      <Output TaskParameter="Include" ItemName="TestAssembly" />
+    </CreateItem>
+
+    <NUnit Assemblies="@(TestAssembly)" IncludeCategory="UnitTests" ToolPath="$(ToolsDirectory)\NUnit" Force32Bit="True"/>
+  </Target>
+
+  <Target Name="SignExeAndDll" DependsOnTargets="UnitTests" >
+
+	<ItemGroup>
+		<SignExeAndDllFiles Include="$(BinDirectory)\Release\$(ProductName)\**\*.exe" />
+		<SignExeAndDllFiles Include="$(BinDirectory)\Release\$(ProductName)\**\*.dll" />
+	</ItemGroup>
+  
+	<SignTool 
+		PfxSha1Thumbprint="$(SigningPfxSha1Thumbprint)"
+		TimeStampServer="http://timestamp.comodoca.com/authenticode;http://timestamp.verisign.com/scripts/timstamp.dll;http://timestamp.globalsign.com/scripts/timstamp.dll"
+		Description="$(ProductDescription)"
+		SignFiles="@(SignExeAndDllFiles)"
+		ContinueBuildOnFailure="True"
+	/>
+  </Target>
+  
+  <Target Name="Cleanup" DependsOnTargets="" >
+	<ItemGroup>
+		<CleanupArtifactsFiles Include="$(ArtifactsDirectory)\**\*.*"/>
+	</ItemGroup>
+	<Delete Files="@(CleanupArtifactsFiles)" />
+  </Target>
+  
+  <Target Name="CopyArtifacts" DependsOnTargets="UnitTests;Cleanup" >
+	<ItemGroup>
+		<ReleaseFiles Include="$(BinDirectory)\Release\$(ProductName)\**\*.exe" />		
+		<ReleaseFiles Include="$(BinDirectory)\Release\$(ProductName)\**\*.exe.config" />		
+	</ItemGroup>
+	<Copy  
+            SourceFiles="@(ReleaseFiles)"  
+            DestinationFolder="$(ArtifactsDirectory)\$(ProductName)"  
+        />
+
+  </Target>
+    
+  <Target Name="Deploy" DependsOnTargets="CopyArtifacts">
+
+	<ItemGroup>
+		<ArtifactsFiles Include="$(ArtifactsDirectory)\$(ProductName)\**\*.*"/>		
+	</ItemGroup>
+  
+    <Zip Files="@(ArtifactsFiles)"
+         WorkingDirectory="$(ArtifactsDirectory)\$(ProductName)"
+         ZipFileName="$(ArtifactsDirectory)\$(ProductName).$(AssemblyVersion).zip"
+         ZipLevel="9"
+         />
+    <Message Text="$(ProductName).$(AssemblyVersion) relase zip complete" Importance="normal" />
+
+   <ItemGroup>
+      <SetupFiles Include="$(BinDirectory)\Release\$(ProductName).Setup\en-us\$(ProductName).$(AssemblyVersion).msi" />
+   </ItemGroup>
+ 	
+	<ItemGroup>
+		<SourceFiles Include="$(SrcDirectory)\**\*.*" Exclude="@(DefaultExclude)" />
+		<SourceFiles Include="$(MSBuildProjectDirectory)\*.*" Exclude="@(DefaultExclude)" />
+		<SourceFiles Include="$(ToolsDirectory)\**\*.*" Exclude="@(DefaultExclude)" />
+	</ItemGroup>
+	
+    <Zip Files="@(SourceFiles)"
+         WorkingDirectory="$(MSBuildProjectDirectory)"
+         ZipFileName="$(BinDirectory)\Release\$(ProductName).Source.$(AssemblyVersion).zip"
+         ZipLevel="9"
+         />
+    <Message Text="$(ProductName).Source.$(AssemblyVersion) zip complete" Importance="normal" />    
+
+  </Target>
+  
+  <Target Name="Build" DependsOnTargets="Compile;UnitTests">
+    <Message Text="$(ProductProjectName).$(AssemblyVersion) build complete" Importance="normal" />
+  </Target>
+</Project>
